@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>AAKS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <header>AAK</header>
+    <main>
+        <div class="grid-container">
+            {% for i in camera_indexes %}
+            <div class="camera-frame">
+                <div class="camera-title">Camera {{ i }}</div>
+                <img src="{{ url_for('video_feed', camera_index=i) }}" alt="Camera {{ i }}" id="camera{{ i }}">
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const reloadInterval = 5 * 60 * 1000; // 5分ごとに再接続（メモリ解放対策）
+
+            document.querySelectorAll("img").forEach(img => {
+                const originalSrc = img.src.split("?")[0];
+                setInterval(() => {
+                    img.src = originalSrc + "?ts=" + Date.now();
+                }, reloadInterval);
+            });
+        });
+    </script>
+</body>
+
+</html>
