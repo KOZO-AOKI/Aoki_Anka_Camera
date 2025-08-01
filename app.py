@@ -19,7 +19,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, 'save')
 os.makedirs(SAVE_DIR, exist_ok=True)
 
-# 24時間以上前の録画ファイルを削除する
+# 24時間以上前の録画ファイルを削除
 def cleanup_old_files(folder, max_age_hours=24):
     now = time.time()
     cutoff = now - (max_age_hours * 3600)

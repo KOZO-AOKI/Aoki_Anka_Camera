@@ -3,12 +3,85 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>AAKS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アオキアンカカメラサーバー</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        header {
+            height: 2rem;
+            background-color: #222;
+            color: #fff;
+            text-align: center;
+            font-size: 0.9rem;
+            line-height: 2rem;
+        }
+
+        main {
+            height: calc(100% - 2rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 0.5rem;
+            width: 100%;
+            height: 100%;
+        }
+
+        .camera-frame {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            border: 1px solid #aaa;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .camera-title {
+            font-size: 0.8rem;
+            color: #333;
+            margin: 0.2rem;
+        }
+
+        .camera-frame img {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 4 / 3;
+            object-fit: contain;
+            flex-grow: 1;
+            border-top: 1px solid #ccc;
+        }
+
+        @media (max-width: 600px) {
+            .camera-title {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <header>AAK</header>
+    <header>アオキアンカカメラ</header>
     <main>
         <div class="grid-container">
             {% for i in camera_indexes %}
@@ -19,11 +92,9 @@
             {% endfor %}
         </div>
     </main>
-
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            const reloadInterval = 5 * 60 * 1000; // 5分ごとに再接続（メモリ解放対策）
-
+            const reloadInterval = 5 * 60 * 1000; // 5分ごとに再読み込み
             document.querySelectorAll("img").forEach(img => {
                 const originalSrc = img.src.split("?")[0];
                 setInterval(() => {
