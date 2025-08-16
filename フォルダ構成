@@ -1,7 +1,7 @@
 camera_server/
-├── app.py                   # Flaskアプリ本体（自動カメラ検出＋録画対応）
-├── save/                    # 録画ファイル保存先（自動生成・MP4が60秒ごとに保存）
+├── app.py                      # Flaskアプリ本体（カメラ自動割当・録画処理）
+├── save/                       # 録画ファイル保存フォルダ（60秒ごとMP4、24時間超は自動削除）
 ├── templates/
-│   └── index.html           # カメラ映像UI（2×2・JSで定期再接続あり）
+│   └── index.html              # カメラUIページ（接続順表示・スマホ対応レスポンシブ）
 ├── static/
-│   └── style.css            # スクロール禁止＆リサイズ対応の2×2レイアウトCSS
+│   └── style.css               # 必要に応じてCSSを分離（index.html内にスタイルがある場合は空でもOK）
