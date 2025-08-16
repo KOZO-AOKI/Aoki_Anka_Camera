@@ -7,19 +7,16 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# 録画設定
 WIDTH = 640
 HEIGHT = 480
 FPS = 20
 RECORD_SECONDS = 60
-MAX_CAMERAS = 4  # 最大4台チェック
+MAX_CAMERAS = 6
 
-# 保存フォルダを app.py と同階層に作成
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, 'save')
 os.makedirs(SAVE_DIR, exist_ok=True)
 
-# 24時間以上前の録画ファイルを削除
 def cleanup_old_files(folder, max_age_hours=24):
     now = time.time()
     cutoff = now - (max_age_hours * 3600)
@@ -28,11 +25,11 @@ def cleanup_old_files(folder, max_age_hours=24):
         if os.path.isfile(path) and os.path.getmtime(path) < cutoff:
             os.remove(path)
 
-# カメラ1台の映像取得・録画処理
 class CameraHandler:
-    def __init__(self, index):
-        self.index = index
-        self.cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
+    def __init__(self, physical_index, display_number):
+        self.physical_index = physical_index
+        self.display_number = display_number  # Camera1〜Camera6
+        self.cap = cv2.VideoCapture(physical_index, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
         self.cap.set(cv2.CAP_PROP_FPS, FPS)
@@ -59,7 +56,7 @@ class CameraHandler:
         while self.running:
             cleanup_old_files(SAVE_DIR, max_age_hours=24)
             now = datetime.now()
-            filename = os.path.join(SAVE_DIR, f"camera{self.index}_{now.strftime('%Y%m%d_%H%M%S')}.mp4")
+            filename = os.path.join(SAVE_DIR, f"Camera{self.display_number}_{now.strftime('%Y%m%d_%H%M%S')}.mp4")
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(filename, fourcc, FPS, (WIDTH, HEIGHT))
 
@@ -79,34 +76,41 @@ class CameraHandler:
                 time.sleep(1.0 / FPS)
 
             out.release()
-            print(f"✅ Camera {self.index} 録画完了: {filename}（{frame_count} フレーム）")
+            print(f"✅ Camera{self.display_number} 録画完了: {filename}（{frame_count} フレーム）")
 
     def release(self):
         self.running = False
         self.cap.release()
 
-# 利用可能なカメラだけ検出して起動
+# カメラ検出（接続順に Camera1〜Camera6 を割り当て）
 cameras = {}
-for i in range(MAX_CAMERAS):
+display_num = 1
+
+for i in range(10):  # 物理インデックス0〜9を試行（6台まで）
+    if display_num > MAX_CAMERAS:
+        break
     cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
     if cap.isOpened():
         cap.release()
-        cameras[i] = CameraHandler(i)
-        print(f"✅ Camera {i} を初期化しました")
+        handler = CameraHandler(i, display_num)
+        cameras[display_num] = handler
+        print(f"✅ Camera{display_num} を物理インデックス {i} に割り当て")
+        display_num += 1
     else:
-        print(f"❌ Camera {i} は利用できません")
+        print(f"❌ Camera index {i} は未接続")
 
-# ルート：配信ページ
 @app.route('/')
 def index():
-    return render_template('index.html', camera_indexes=cameras.keys())
+    return render_template('index.html', camera_indexes=sorted(cameras.keys()))
 
-# 映像配信ルート（個別カメラ）
-@app.route('/video_feed/<int:camera_index>')
-def video_feed(camera_index):
+@app.route('/video_feed/<int:display_number>')
+def video_feed(display_number):
     def gen():
+        handler = cameras.get(display_number)
+        if handler is None:
+            return
         while True:
-            frame = cameras[camera_index].get_frame()
+            frame = handler.get_frame()
             if frame is None:
                 continue
             ret, buffer = cv2.imencode('.jpg', frame)
@@ -117,6 +121,5 @@ def video_feed(camera_index):
             time.sleep(1.0 / FPS)
     return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-# 実行開始
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=False)
